@@ -1,0 +1,80 @@
+export const tribunAbi = [
+  {
+    type: "function",
+    name: "transferFrom",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "handed",
+    stateMutability: "view",
+    inputs: [{ name: "ticketId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "refund",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "ticketId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "claim",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "eventId", type: "uint256" }],
+    outputs: [{ name: "ticketId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "ticketsOf",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    type: "function",
+    name: "verify",
+    stateMutability: "view",
+    inputs: [{ name: "ticketId", type: "uint256" }],
+    outputs: [
+      { name: "valid", type: "bool" },
+      { name: "eventId", type: "uint256" },
+      { name: "owner", type: "address" },
+    ],
+  },
+  {
+    type: "function",
+    name: "eventCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "eventInfo",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [
+      { name: "name", type: "string" },
+      { name: "whenLabel", type: "string" },
+      { name: "supply", type: "uint32" },
+      { name: "issued", type: "uint32" },
+    ],
+  },
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { name: "from", type: "address", indexed: true },
+      { name: "to", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+    ],
+  },
+] as const;

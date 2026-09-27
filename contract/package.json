@@ -1,0 +1,16 @@
+{
+  "name": "tribun-contract",
+  "private": true,
+  "scripts": {
+    "test": "hardhat test",
+    "deploy:fuji": "hardhat run scripts/deploy.js --network fuji"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "chai": "^4.5.0",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.15.0",
+    "hardhat": "^2.26.3"
+  }
+}

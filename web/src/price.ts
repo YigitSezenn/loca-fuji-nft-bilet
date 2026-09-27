@@ -1,0 +1,1 @@
+export const TICKET_PRICE = 200_000_000_000_000n;
