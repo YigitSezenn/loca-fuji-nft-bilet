@@ -138,7 +138,8 @@ export function explain(error: unknown) {
 }
 
 function chainResult(error: unknown) {
-  const msg = error instanceof Error ? error.message : "";
+  const err = error as { message?: string; shortMessage?: string };
+  const msg = `${err.shortMessage ?? ""} ${err.message ?? ""}`;
   if (/user rejected|rejected the request/i.test(msg)) return "İşlem iptal edildi. Avalanche’e gönderilmedi.";
   if (/insufficient funds/i.test(msg)) return "Avalanche işlemi başarısız oldu. Bakiye yetmiyor.";
   if (msg.includes("already")) return "Avalanche işlemi başarısız oldu. Bu etkinlik için kaydın var.";
@@ -148,6 +149,16 @@ function chainResult(error: unknown) {
   if (msg.includes("taken")) return "Avalanche işlemi başarısız oldu. Alıcının bu etkinlikte bileti var.";
   if (msg.includes("to")) return "Avalanche işlemi başarısız oldu. Bu adrese devredilemez.";
   if (msg.includes("invalid")) return "Avalanche işlemi başarısız oldu. Bilet geçerli değil.";
+  return "Avalanche işlemi başarısız oldu.";
+}
+
+async function failedReason(from: Address, data: `0x${string}`, value?: bigint) {
+  if (!contractAddress) return "Avalanche işlemi başarısız oldu.";
+  try {
+    await publicClient.call({ account: from, to: contractAddress, data, value });
+  } catch (error) {
+    return chainResult(error);
+  }
   return "Avalanche işlemi başarısız oldu.";
 }
 
@@ -534,17 +545,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const provider = providerRef.current;
       if (!provider || !account || !contractAddress) return null;
       const attempt = ++signAttempt.current;
-      const pending = sendTransaction(
-        provider,
-        account,
-        contractAddress,
-        encodeFunctionData({
-          abi: tribunAbi,
-          functionName: "claim",
-          args: [BigInt(eventId)],
-        }),
-        TICKET_PRICE,
-      );
+      const data = encodeFunctionData({
+        abi: tribunAbi,
+        functionName: "claim",
+        args: [BigInt(eventId)],
+      });
+      const pending = sendTransaction(provider, account, contractAddress, data, TICKET_PRICE);
       const beforePromise = publicClient.readContract({
         address: contractAddress,
         abi: tribunAbi,
@@ -584,7 +590,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (attempt !== signAttempt.current) return null;
         if (receipt.status !== "success") {
           issuedAtLeast.current[eventId] = undefined;
-          say("Avalanche işlemi başarısız oldu.", "bad");
+          say(await failedReason(account, data, TICKET_PRICE), "bad");
           await loadEvents();
           const value = await publicClient.getBalance({ address: account });
           setBalance(value);
@@ -630,16 +636,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const provider = providerRef.current;
       if (!provider || !account || !contractAddress) return false;
       const attempt = ++signAttempt.current;
-      const pending = sendTransaction(
-        provider,
-        account,
-        contractAddress,
-        encodeFunctionData({
-          abi: tribunAbi,
-          functionName: "refund",
-          args: [ticketId],
-        }),
-      );
+      const data = encodeFunctionData({
+        abi: tribunAbi,
+        functionName: "refund",
+        args: [ticketId],
+      });
+      const pending = sendTransaction(provider, account, contractAddress, data);
       const eventIndex = Number(eventId);
       const beforeIssued = eventsRef.current[eventIndex]?.issued ?? 0;
       issuedAtMost.current[eventIndex] = Math.max(0, beforeIssued - 1);
@@ -674,7 +676,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (attempt !== signAttempt.current) return false;
         if (receipt.status !== "success") {
           issuedAtMost.current[eventIndex] = undefined;
-          say("Avalanche işlemi başarısız oldu.", "bad");
+          say(await failedReason(account, data), "bad");
           await loadEvents();
           await loadMine(account);
           const value = await publicClient.getBalance({ address: account });
@@ -720,16 +722,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return false;
       }
       const attempt = ++signAttempt.current;
-      const pending = sendTransaction(
-        provider,
-        account,
-        contractAddress,
-        encodeFunctionData({
-          abi: tribunAbi,
-          functionName: "transferFrom",
-          args: [account, to, ticketId],
-        }),
-      );
+      const data = encodeFunctionData({
+        abi: tribunAbi,
+        functionName: "transferFrom",
+        args: [account, to, ticketId],
+      });
+      const pending = sendTransaction(provider, account, contractAddress, data);
       const previous = mine;
       setPassingId(ticketId.toString());
       setAwaitingWallet(true);
@@ -751,7 +749,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
         if (attempt !== signAttempt.current) return false;
         if (receipt.status !== "success") {
-          say("Avalanche işlemi başarısız oldu.", "bad");
+          say(await failedReason(account, data), "bad");
           await loadMine(account);
           return false;
         }

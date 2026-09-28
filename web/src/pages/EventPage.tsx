@@ -11,7 +11,7 @@ export default function EventPage() {
   const { id } = useParams();
   const index = Number(id);
   const navigate = useNavigate();
-  const { events, account, onFuji, ready, busyId, awaitingWallet, claim, wallets, connect, ensureFuji, cancelSign } =
+  const { events, mine, account, onFuji, ready, busyId, awaitingWallet, claim, wallets, connect, ensureFuji, cancelSign } =
     useSession();
   const wallet = preferredWallet(wallets);
   const event = Number.isInteger(index) ? events[index] : undefined;
@@ -43,6 +43,7 @@ export default function EventPage() {
   const left = event.supply - event.issued;
   const filled = event.supply === 0 ? 0 : Math.round((left / event.supply) * 100);
   const needsProof = Boolean(meta.adult && account && !proved);
+  const owned = mine.some((ticket) => Number(ticket.eventId) === index);
 
   async function take() {
     const ticketId = await claim(index);
@@ -125,10 +126,12 @@ export default function EventPage() {
             <button
               className="solid wide"
               type="button"
-              disabled={!ready || busyId !== null || left === 0}
+              disabled={!ready || busyId !== null || left === 0 || owned}
               onClick={take}
             >
-              {left === 0
+              {owned
+                ? "Bu etkinlikte biletin var"
+                : left === 0
                 ? "Tükendi"
                 : busyId === index && awaitingWallet
                   ? "MetaMask’ta onayla"
